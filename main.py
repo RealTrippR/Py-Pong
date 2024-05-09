@@ -7,14 +7,18 @@
 #        key = chr(msvcrt.getch()[0])
 #        print("Key pressed: %s" % msvcrt.getch())
 import socket
+import keyboard
 from playsound import playsound
 from threading import Thread
 import winsound
 import keyboard  # using module keyboard
+import time
 import tkinter as tk
 #pip install graphics.py
 from graphics import *
 import msvcrt
+
+deltaTime = 1.0
 
 class Window(GraphWin):
     def __init__(self, title="Graphics Window",
@@ -43,8 +47,6 @@ class KeyRepeater(tk.Tk):
     def keyup(self, event=None):
         self.current.pop(event.keysym,None)
 
-inputWin = KeyRepeater()
-inputWin.minsize(2,2)
 
 win = Window(width = 1000, height = 500) # create a window
 #win.canvas.cords()
@@ -256,7 +258,8 @@ def sendMultiplayerData(data):
 
 # Handles sound so that it doesn't pause program
 def playy():
-    playsound("C:\\Users\\tripp\\OneDrive\\Documents\\Python\\Pong Game\\PongSoundWAV.wav", block = True)
+    #print("A sound is supposed to play")
+    playsound("PongSoundWAV.wav", block = True)
 
 Texts = []
 #Asks user if they want to play against AI
@@ -388,19 +391,23 @@ def drawPongBall():
 
     R = PongBallRadius
     # Checks for top border collision
-    if (Y+R >= screenH or Y+R <= 0) and buffer1 == False:
+    if (Y+R >= screenH or Y+R <= 0):
+        if (Y+R >= screenH):
+            Ball_Pos_Y = 1
+        if (Y+R <= 0):
+            Ball_Pos_Y = 0
         #Ball_Veloc_X *= -1
         Ball_Veloc_Y *= -1
         #Ball_Veloc_Y += 1
         buffer1 = True
     # Checks for side border collision
     # Left side hit
-    if (X+R >= screenW) and buffer1 == False:
+    if (X+R >= screenW):
         buffer1 = True
         p1_score += 1
         resetScene()
     # Right side hit
-    if (X+R <= 0) and buffer1 == False:
+    if (X+R <= 0):
         buffer1 = True
         p2_score += 1
         resetScene()
@@ -416,7 +423,7 @@ def drawPongBall():
     diff = 0.0
     if paddle1Hit:
         #stop_threads = False
-        #playsound('C:\\Users\\tripp\\OneDrive\\Documents\\Python\\Pong Game\\PongSoundWAV.wav', True)
+        playsound('PongSoundWAV.wav', False)
         T = Thread(target=playy) # create thread
         T.start() # Launch created thread
         
@@ -446,8 +453,8 @@ def drawPongBall():
     Ball_Veloc_Y = clamp(Ball_Veloc_Y, -.007, .007)
     # Moves ball
     if gamemode == 0:
-        Ball_Pos_X += Ball_Veloc_X
-        Ball_Pos_Y += Ball_Veloc_Y
+        Ball_Pos_X += Ball_Veloc_X * deltaTime * 4000
+        Ball_Pos_Y += Ball_Veloc_Y * deltaTime * 4000
 
     #print("X: ", Ball_Pos_X, "Y: ", Ball_Pos_Y)
     if shapes[2] == 0:
@@ -458,7 +465,7 @@ def drawPongBall():
         #print(myCircle.getP1().getY())
         #myCircle.move(.5,0)
     else:
-        shapes[2].move(Ball_Veloc_X, Ball_Veloc_Y)
+        shapes[2].move(Ball_Veloc_X * deltaTime * 4000, Ball_Veloc_Y * deltaTime * 4000)
 
     Ball_Pos_X = shapes[2].getP1().getX()
     Ball_Pos_Y = shapes[2].getP1().getY()
@@ -477,25 +484,26 @@ Player2_Keys = ['o','k']
 drawPaddle(1)
 drawPaddle(2)
 
-move_increment = .05
+move_increment = 1
 
 def moveP1_UP():
     global p1Y
-    p1Y += move_increment
+    p1Y += move_increment * deltaTime
     drawPaddle(1)
 def moveP1_Down():
     global p1Y
-    p1Y -= move_increment
+    p1Y -= move_increment * deltaTime
     drawPaddle(1)
 def moveP2_UP():
     global p2Y
-    p2Y += move_increment
+    p2Y += move_increment * deltaTime
     drawPaddle(2)
 def moveP2_Down():
     global p2Y
-    p2Y -= move_increment
+    p2Y -= move_increment * deltaTime
     drawPaddle(2)
 
+'''
 if gamemode == 0: # Local
     inputWin.key_bind(Player1_Keys[0], moveP1_UP)
     inputWin.key_bind(Player1_Keys[1], moveP1_Down)
@@ -512,14 +520,43 @@ elif gamemode == 2:
     else:
         inputWin.key_bind(Player1_Keys[0], moveP2_Down)
         inputWin.key_bind(Player1_Keys[1], moveP2_UP)
-
+'''
+if (gamemode == 2):
+    establishConnection() # Initalizes Multiplayer Connection
 #inputWin.mainloop()
 oldPC_Y = p2Y
 old_P1_Score = -1
 old_P2_Score = -1
+oldTime = time.time()
 count = 0
 text_objects = [0,0]
 while (not (p1_score > 9 or p2_score > 9)):
+    if gamemode == 0: # Local
+        if keyboard.is_pressed(Player1_Keys[0]):
+            moveP1_UP()
+        if keyboard.is_pressed(Player1_Keys[1]):
+            moveP1_Down()
+        if keyboard.is_pressed(Player2_Keys[0]):
+            moveP2_UP()
+        if keyboard.is_pressed(Player2_Keys[1]):
+            moveP2_Down()
+    elif gamemode == 1:
+        if keyboard.is_pressed(Player1_Keys[0]):
+            moveP1_UP()
+        if keyboard.is_pressed(Player1_Keys[1]):
+            moveP1_Down()
+    elif gamemode == 2:
+        establishConnection() # Initalizes Multiplayer Connection
+        if plyrNum == 1:
+            if keyboard.is_pressed(Player1_Keys[0]):
+                moveP1_UP()
+            if keyboard.is_pressed(Player1_Keys[1]):
+                moveP1_Down()
+        else:
+            if keyboard.is_pressed(Player2_Keys[0]):
+                moveP2_UP()
+            if keyboard.is_pressed(Player2_Keys[1]):
+                moveP2_Down()
     count += 1
     if count > 125:
         count = 0
@@ -531,7 +568,7 @@ while (not (p1_score > 9 or p2_score > 9)):
             if oldPC_Y != p2Y: # Updates computers paddle
                 drawPaddle(2)
             oldPC_Y = p2Y
-            p2Y = calc_AI_move() / (screenH *.5) - 1
+            p2Y = clamp(calc_AI_move() / (screenH *.5) - 1,p2Y-(45*deltaTime),p2Y+(45*deltaTime))
     elif gamemode == 2 and count == 125:
         if plyrNum == 1:
             sendMultiplayerData(str(p1Y) + '\n' + str(p1_score) + '\n' + str(p2_score) + '\n' + str(Ball_Pos_X) + '\n' + str(Ball_Pos_Y) + '\n' + str(Ball_Veloc_X) + '\n' + str(Ball_Veloc_Y))
@@ -606,4 +643,7 @@ while (not (p1_score > 9 or p2_score > 9)):
         old_P2_Score = p2_score
     if True:
         drawPongBall()
+
+    deltaTime = time.time() - oldTime
+    oldTime = time.time()
 win.close()
