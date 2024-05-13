@@ -1,2 +1,2 @@
 # Py-Pong
-A pong game.
+A simple pong game.
